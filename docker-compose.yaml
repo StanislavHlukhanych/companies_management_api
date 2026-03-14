@@ -1,0 +1,32 @@
+services:
+    php:
+        image: php:8.4-fpm-alpine
+        command: >
+            sh -c "docker-php-ext-install pdo_mysql && php-fpm"
+        volumes:
+            - .:/var/www/html
+        environment:
+            DATABASE_URL: "mysql://root:1111@database:3306/symfony_test_task"
+
+    nginx:
+        image: nginx:alpine
+        ports:
+            - "8080:80"
+        volumes:
+            - .:/var/www/html
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+        depends_on:
+            - php
+
+    database:
+        image: mysql:8.0.32
+        environment:
+            MYSQL_ROOT_PASSWORD: 1111
+            MYSQL_DATABASE: symfony_test_task
+        ports:
+            - "3306:3306"
+        volumes:
+            - database_data:/var/lib/mysql:rw
+
+volumes:
+    database_data:
