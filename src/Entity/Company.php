@@ -15,11 +15,11 @@ class Company
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['company:read'])]
+    #[Groups(['company:read', 'employee:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'company:write'])]
+    #[Groups(['company:read', 'company:write', 'employee:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -30,14 +30,14 @@ class Company
      * @var Collection<int, Employee>
      */
     #[ORM\OneToMany(targetEntity: Employee::class, mappedBy: 'company', orphanRemoval: true)]
-    #[Groups(['company:read', 'company:write'])]
+    #[Groups(['company:read'])]
     private Collection $employees;
 
     /**
      * @var Collection<int, Project>
      */
     #[ORM\OneToMany(targetEntity: Project::class, mappedBy: 'company')]
-    #[Groups(['company:read', 'company:write'])]
+    #[Groups(['company:read'])]
     private Collection $projects;
 
     public function __construct()

@@ -26,6 +26,9 @@ final class CompanyController extends AbstractController
     public function show(CompanyRepository $companyRepository, int $id): JsonResponse
     {
         $company = $companyRepository->find($id);
+        if (!$company) {
+            return $this->json(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
+        }
 
         return $this->json($company, Response::HTTP_OK, [], ['groups' => 'company:read']);
     }
@@ -35,7 +38,7 @@ final class CompanyController extends AbstractController
                            SerializerInterface $serializer): JsonResponse
     {
         $data = $request->getContent();
-        $company = $serializer->deserialize($data, Company::class, 'json');
+        $company = $serializer->deserialize($data, Company::class, 'json', ['groups' => 'company:write']);
 
         $entityManager->persist($company);
         $entityManager->flush();
@@ -53,7 +56,8 @@ final class CompanyController extends AbstractController
         }
 
         $data = $request->getContent();
-        $serializer->deserialize($data, Company::class, 'json', ['object_to_populate' => $company]);
+        $serializer->deserialize($data, Company::class, 'json',
+            ['object_to_populate' => $company, 'groups' => 'company:write']);
 
         $entityManager->flush();
 

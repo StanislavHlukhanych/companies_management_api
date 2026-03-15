@@ -14,29 +14,31 @@ class Employee
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['company:read'])]
+    #[Groups(['company:read', 'employee:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read'])]
+    #[Groups(['company:read', 'employee:read', 'employee:write'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read'])]
+    #[Groups(['company:read', 'employee:read', 'employee:write'])]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read'])]
+    #[Groups(['company:read', 'employee:read', 'employee:write'])]
     private ?string $email = null;
 
     #[ORM\ManyToOne(inversedBy: 'employees')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['employee:read'])]
     private ?Company $company = null;
 
     /**
      * @var Collection<int, Project>
      */
     #[ORM\ManyToMany(targetEntity: Project::class, mappedBy: 'participants')]
+    #[Groups(['employee:read'])]
     private Collection $projects;
 
     public function __construct()
