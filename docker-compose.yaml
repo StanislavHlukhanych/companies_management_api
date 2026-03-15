@@ -1,8 +1,6 @@
 services:
     php:
-        image: php:8.4-fpm-alpine
-        command: >
-            sh -c "docker-php-ext-install pdo_mysql && php-fpm"
+        build: .
         volumes:
             - .:/var/www/html
         environment:
