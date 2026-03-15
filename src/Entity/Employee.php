@@ -14,19 +14,19 @@ class Employee
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['company:read', 'employee:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'employee:read', 'employee:write'])]
+    #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'employee:read', 'employee:write'])]
+    #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'employee:read', 'employee:write'])]
+    #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
     private ?string $email = null;
 
     #[ORM\ManyToOne(inversedBy: 'employees')]

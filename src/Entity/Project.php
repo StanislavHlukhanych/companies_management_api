@@ -15,24 +15,26 @@ class Project
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['company:read', 'employee:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'employee:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read', 'project:write'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['company:read', 'employee:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read', 'project:write'])]
     private ?string $description = null;
 
     #[ORM\ManyToOne(inversedBy: 'projects')]
+    #[Groups(['project:read'])]
     private ?Company $company = null;
 
     /**
      * @var Collection<int, Employee>
      */
     #[ORM\ManyToMany(targetEntity: Employee::class, inversedBy: 'projects')]
+    #[Groups(['project:read'])]
     private Collection $participants;
 
     public function __construct()
