@@ -6,6 +6,7 @@ use App\Entity\Project;
 use App\Repository\CompanyRepository;
 use App\Repository\EmployeeRepository;
 use App\Repository\ProjectRepository;
+use App\Trait\ApiResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,23 +17,20 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 final class ProjectController extends AbstractController
 {
+    use ApiResponseTrait;
+
     #[Route('/api/projects', name: 'app_project', methods: ['GET'])]
     public function index(ProjectRepository $projectRepository): JsonResponse
     {
         $projects = $projectRepository->findAll();
 
-        return $this->json($projects, Response::HTTP_OK, [], ['groups' => 'project:read']);
+        return $this->success($projects, Response::HTTP_OK, ['project:read']);
     }
 
     #[Route('/api/projects/{id}', name: 'app_project_show', methods: ['GET'])]
-    public function show(ProjectRepository $projectRepository, int $id): JsonResponse
+    public function show(Project $project): JsonResponse
     {
-        $project = $projectRepository->find($id);
-        if (!$project) {
-            return $this->json(['error' => 'Project not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        return $this->json($project, Response::HTTP_OK, [], ['groups' => 'project:read']);
+        return $this->success($project, Response::HTTP_OK, ['project:read']);
     }
 
     #[Route('/api/projects', name: 'app_project_create', methods: ['POST'])]
@@ -45,17 +43,26 @@ final class ProjectController extends AbstractController
     ): JsonResponse
     {
         $data = $request->toArray();
-        $project = $serializer->deserialize(json_encode($data), Project::class, 'json', ['groups' => 'project:write']);
 
         $companyId = $data['companyId'] ?? null;
         if (!$companyId) {
-            return $this->json(['error' => 'Company ID is required'], Response::HTTP_BAD_REQUEST);
+            return $this->fail([
+                'companyId' => 'This field is required'
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         $company = $companyRepository->find($companyId);
         if (!$company) {
-            return $this->json(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
+            return $this->fail([
+                'companyId' => 'Company with the provided ID does not exist'
+            ], Response::HTTP_NOT_FOUND);
         }
+
+        $project = $serializer->deserialize(
+            $request->getContent(),
+            Project::class,
+            'json',
+            ['groups' => 'project:write']);
 
         $project->setCompany($company);
 
@@ -63,7 +70,9 @@ final class ProjectController extends AbstractController
             foreach ($data['participantIds'] as $participantId) {
                 $employee = $employeeRepository->find($participantId);
                 if (!$employee) {
-                    return $this->json(['error' => sprintf('Employee with id %d not found', $participantId)], Response::HTTP_NOT_FOUND);
+                    return $this->fail([
+                        'participantIds' => "Employee with ID $participantId not found"
+                    ], Response::HTTP_NOT_FOUND);
                 }
                 $project->addParticipant($employee);
             }
@@ -72,33 +81,32 @@ final class ProjectController extends AbstractController
         $entityManager->persist($project);
         $entityManager->flush();
 
-        return $this->json(['message' => 'Project created successfully'], Response::HTTP_CREATED);
+        return $this->success($project, Response::HTTP_CREATED, ['project:read']);
     }
 
     #[Route('/api/projects/{id}', name: 'app_project_update', methods: ['PUT'])]
     public function update(
         Request $request,
-        ProjectRepository $projectRepository,
         CompanyRepository $companyRepository,
         EmployeeRepository $employeeRepository,
         EntityManagerInterface $entityManager,
         SerializerInterface $serializer,
-        int $id
+        Project $project
     ): JsonResponse
     {
-        $project = $projectRepository->find($id);
-        if (!$project) {
-            return $this->json(['error' => 'Project not found'], Response::HTTP_NOT_FOUND);
-        }
-
         $data = $request->toArray();
-        $serializer->deserialize(json_encode($data), Project::class, 'json',
+        $serializer->deserialize(
+            $request->getContent(),
+            Project::class,
+            'json',
             ['object_to_populate' => $project, 'groups' => 'project:write']);
 
         if (isset($data['companyId'])) {
             $company = $companyRepository->find($data['companyId']);
             if (!$company) {
-                return $this->json(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
+                return $this->fail([
+                    'companyId' => 'Company with the provided ID does not exist'
+                ], Response::HTTP_NOT_FOUND);
             }
             $project->setCompany($company);
         }
@@ -111,7 +119,9 @@ final class ProjectController extends AbstractController
             foreach ($data['participantIds'] as $participantId) {
                 $employee = $employeeRepository->find($participantId);
                 if (!$employee) {
-                    return $this->json(['error' => sprintf('Employee with id %d not found', $participantId)], Response::HTTP_NOT_FOUND);
+                    return $this->fail([
+                        'participantIds' => "Employee with ID $participantId not found"
+                    ], Response::HTTP_NOT_FOUND);
                 }
                 $project->addParticipant($employee);
             }
@@ -119,20 +129,18 @@ final class ProjectController extends AbstractController
 
         $entityManager->flush();
 
-        return $this->json(['message' => 'Project updated successfully'], Response::HTTP_OK);
+        return $this->success($project, Response::HTTP_OK, ['project:read']);
     }
 
     #[Route('/api/projects/{id}', name: 'app_project_delete', methods: ['DELETE'])]
-    public function delete(ProjectRepository $projectRepository, EntityManagerInterface $entityManager, int $id): JsonResponse
+    public function delete(
+        EntityManagerInterface $entityManager,
+        Project $project
+    ): JsonResponse
     {
-        $project = $projectRepository->find($id);
-        if (!$project) {
-            return $this->json(['error' => 'Project not found'], Response::HTTP_NOT_FOUND);
-        }
-
         $entityManager->remove($project);
         $entityManager->flush();
 
-        return $this->json(['message' => 'Project deleted successfully'], Response::HTTP_OK);
+        return $this->success(null, Response::HTTP_OK);
     }
 }

@@ -6,9 +6,12 @@ use App\Repository\EmployeeRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]
+#[ORM\HasLifecycleCallbacks]
+#[UniqueEntity(fields: ['email'], message: 'This email is already in use.')]
 class Employee
 {
     #[ORM\Id]
@@ -25,7 +28,7 @@ class Employee
     #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
     private ?string $lastName = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
     private ?string $email = null;
 
@@ -40,6 +43,14 @@ class Employee
     #[ORM\ManyToMany(targetEntity: Project::class, mappedBy: 'participants')]
     #[Groups(['employee:read'])]
     private Collection $projects;
+
+    #[ORM\Column]
+    #[Groups(['employee:read'])]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column]
+    #[Groups(['employee:read'])]
+    private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()
     {
@@ -124,5 +135,28 @@ class Employee
         }
 
         return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    #[ORM\PrePersist]
+    public function setCreatedAt(): void
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAt(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }

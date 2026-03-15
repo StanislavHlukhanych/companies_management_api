@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\Employee;
 use App\Repository\CompanyRepository;
 use App\Repository\EmployeeRepository;
+use App\Repository\ProjectRepository;
+use App\Trait\ApiResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -12,44 +14,79 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class EmployeeController extends AbstractController
 {
+    use ApiResponseTrait;
+
     #[Route('/api/employees', name: 'app_employee', methods: ['GET'])]
     public function index(EmployeeRepository $employeeRepository): JsonResponse
     {
         $employees = $employeeRepository->findAll();
 
-        return $this->json($employees, Response::HTTP_OK, [], ['groups' => 'employee:read']);
+        return $this->success($employees, Response::HTTP_OK, ['employee:read']);
     }
 
     #[Route('/api/employees/{id}', name: 'app_employee_show', methods: ['GET'])]
-    public function show(EmployeeRepository $employeeRepository, int $id): JsonResponse
+    public function show(Employee $employee): JsonResponse
     {
-        $employee = $employeeRepository->find($id);
-        if(!$employee) {
-            return $this->json(['error' => 'Employee not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        return $this->json($employee, Response::HTTP_OK, [], ['groups' => 'employee:read']);
+        return $this->success($employee, Response::HTTP_OK, ['employee:read']);
     }
 
     #[Route('/api/employees', name: 'app_employee_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager,
-                           SerializerInterface $serializer, CompanyRepository $companyRepository): JsonResponse
+    public function create(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        SerializerInterface $serializer,
+        CompanyRepository $companyRepository,
+        ProjectRepository $projectRepository,
+        ValidatorInterface $validator
+    ): JsonResponse
     {
         $data = $request->toArray();
-        $employee = $serializer->deserialize(json_encode($data), Employee::class, 'json', ['groups' => 'employee:write']);
 
         $companyId = $data['companyId'] ?? null;
-
         if (!$companyId) {
-            return $this->json(['error' => 'Company ID is required'], Response::HTTP_BAD_REQUEST);
+            return $this->fail([
+                'companyId' => 'This field is required'
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         $company = $companyRepository->find($companyId);
         if (!$company) {
-            return $this->json(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
+            return $this->fail([
+                'companyId' => 'Company with the provided ID does not exist'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $employee = $serializer->deserialize(
+            $request->getContent(),
+            Employee::class,
+            'json',
+            ['groups' => 'employee:write']
+        );
+
+        $errors = $validator->validate($employee);
+
+        if (count($errors) > 0) {
+            $dataErrors = [];
+            foreach ($errors as $error) {
+                $dataErrors[$error->getPropertyPath()] = $error->getMessage();
+            }
+            return $this->fail($dataErrors, 422);
+        }
+
+        if (isset($data['projectIds']) && is_array($data['projectIds'])) {
+            foreach ($data['projectIds'] as $projectId) {
+                $project = $projectRepository->find($projectId);
+                if (!$project) {
+                    return $this->fail([
+                        'projectIds' => "Project with ID $projectId not found"
+                    ], Response::HTTP_NOT_FOUND);
+                }
+                $employee->addProject($project);
+            }
         }
 
         $employee->setCompany($company);
@@ -57,47 +94,68 @@ final class EmployeeController extends AbstractController
         $entityManager->persist($employee);
         $entityManager->flush();
 
-        return $this->json(['message' => 'Employee created successfully'], Response::HTTP_CREATED);
+        return $this->success($employee, Response::HTTP_CREATED, ['employee:read']);
     }
 
     #[Route('/api/employees/{id}', name: 'app_employee_update', methods: ['PUT'])]
-    public function update(Request $request, EmployeeRepository $employeeRepository, CompanyRepository $companyRepository,
-                           EntityManagerInterface $entityManager, SerializerInterface $serializer, int $id): JsonResponse
+    public function update(
+        Request $request,
+        CompanyRepository $companyRepository,
+        ProjectRepository $projectRepository,
+        EntityManagerInterface $entityManager,
+        SerializerInterface $serializer,
+        Employee $employee
+    ): JsonResponse
     {
-        $employee = $employeeRepository->find($id);
-        if (!$employee) {
-            return $this->json(['error' => 'Employee not found'], Response::HTTP_NOT_FOUND);
-        }
-
         $data = $request->toArray();
-        $serializer->deserialize(json_encode($data), Employee::class, 'json',
-            ['object_to_populate' => $employee, 'groups' => 'employee:write']);
+
+        $serializer->deserialize(
+            $request->getContent(),
+            Employee::class,
+            'json',
+            ['object_to_populate' => $employee, 'groups' => 'employee:write']
+        );
 
         if (isset($data['companyId'])) {
             $company = $companyRepository->find($data['companyId']);
             if (!$company) {
-                return new JsonResponse(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
+                return $this->fail(
+                    ['companyId' => 'Company with the provided ID does not exist'],
+                    Response::HTTP_NOT_FOUND);
             }
             $employee->setCompany($company);
         }
 
+        if (isset($data['projectIds']) && is_array($data['projectIds'])) {
+            foreach ($employee->getProjects()->toArray() as $project) {
+                $employee->removeProject($project);
+            }
+
+            foreach ($data['projectIds'] as $projectId) {
+                $project = $projectRepository->find($projectId);
+                if (!$project) {
+                    return $this->fail([
+                        'projectIds' => "Project with ID $projectId not found"
+                    ], Response::HTTP_NOT_FOUND);
+                }
+                $employee->addProject($project);
+            }
+        }
+
         $entityManager->flush();
 
-        return $this->json(['message' => 'Employee updated successfully'], Response::HTTP_OK);
+        return $this->success($employee, Response::HTTP_OK, ['employee:read']);
     }
 
     #[Route('/api/employees/{id}', name: 'app_employee_delete', methods: ['DELETE'])]
-    public function delete(EmployeeRepository $employeeRepository,
-                           EntityManagerInterface $entityManager, int $id): JsonResponse
+    public function delete(
+        EntityManagerInterface $entityManager,
+        Employee $employee
+    ): JsonResponse
     {
-        $employee = $employeeRepository->find($id);
-        if (!$employee) {
-            return $this->json(['error' => 'Employee not found'], Response::HTTP_NOT_FOUND);
-        }
-
         $entityManager->remove($employee);
         $entityManager->flush();
 
-        return $this->json(['message' => 'Employee deleted successfully'], Response::HTTP_OK);
+        return $this->success(null, Response::HTTP_OK);
     }
 }

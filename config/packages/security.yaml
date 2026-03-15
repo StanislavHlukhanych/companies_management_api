@@ -29,6 +29,9 @@ security:
     access_control:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/companies, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/employees, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/projects, methods: [GET], roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

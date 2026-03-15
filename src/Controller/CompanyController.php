@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Company;
 use App\Repository\CompanyRepository;
+use App\Trait\ApiResponseTrait;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,28 +15,28 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 final class CompanyController extends AbstractController
 {
+    use ApiResponseTrait;
+
     #[Route('/api/companies', name: 'app_company', methods: ['GET'])]
     public function index(CompanyRepository $companyRepository): JsonResponse
     {
         $companies = $companyRepository->findAll();
 
-        return $this->json($companies, Response::HTTP_OK, [], ['groups' => 'company:read']);
+        return $this->success($companies, Response::HTTP_OK, ['company:read']);
     }
 
     #[Route('/api/companies/{id}', name: 'app_company_show', methods: ['GET'])]
-    public function show(CompanyRepository $companyRepository, int $id): JsonResponse
+    public function show(Company $company): JsonResponse
     {
-        $company = $companyRepository->find($id);
-        if (!$company) {
-            return $this->json(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        return $this->json($company, Response::HTTP_OK, [], ['groups' => 'company:read']);
+        return $this->success($company, Response::HTTP_OK, ['company:read']);
     }
 
     #[Route('/api/companies', name: 'app_company_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager,
-                           SerializerInterface $serializer): JsonResponse
+    public function create(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        SerializerInterface $serializer
+    ): JsonResponse
     {
         $data = $request->getContent();
         $company = $serializer->deserialize($data, Company::class, 'json', ['groups' => 'company:write']);
@@ -43,39 +44,38 @@ final class CompanyController extends AbstractController
         $entityManager->persist($company);
         $entityManager->flush();
 
-        return $this->json(['message' => 'Company created successfully'], Response::HTTP_CREATED);
+        return $this->success($company, Response::HTTP_CREATED, ['company:read']);
     }
 
     #[Route('/api/companies/{id}', name: 'app_company_update', methods: ['PUT'])]
-    public function update(Request $request, CompanyRepository $companyRepository, EntityManagerInterface $entityManager,
-                           SerializerInterface $serializer, int $id): JsonResponse
+    public function update(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        SerializerInterface $serializer,
+        Company $company
+    ): JsonResponse
     {
-        $company = $companyRepository->find($id);
-        if (!$company) {
-            return new JsonResponse(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
-        }
-
         $data = $request->getContent();
         $serializer->deserialize($data, Company::class, 'json',
             ['object_to_populate' => $company, 'groups' => 'company:write']);
 
         $entityManager->flush();
 
-        return $this->json(['message' => 'Company updated successfully'], Response::HTTP_OK);
+        return $this->success($company, Response::HTTP_OK, ['company:read']);
     }
 
     #[Route('/api/companies/{id}', name: 'app_company_delete', methods: ['DELETE'])]
-    public function delete(CompanyRepository $companyRepository, EntityManagerInterface $entityManager,
-                           int $id): JsonResponse
-        {
-            $company = $companyRepository->find($id);
-            if (!$company) {
-                return new JsonResponse(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
-            }
-
-            $entityManager->remove($company);
-            $entityManager->flush();
-
-            return $this->json(['message' => 'Company deleted successfully'], Response::HTTP_OK);
+    public function delete(EntityManagerInterface $entityManager, Company $company): JsonResponse
+    {
+        if (count($company->getEmployees()) > 0 || count($company->getProjects()) > 0) {
+            return $this->fail([
+                'error' => 'Cannot delete a company that has employees or projects'
+            ], Response::HTTP_BAD_REQUEST);
         }
+
+        $entityManager->remove($company);
+        $entityManager->flush();
+
+        return $this->success(null, Response::HTTP_OK);
+    }
 }

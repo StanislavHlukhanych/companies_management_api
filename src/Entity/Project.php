@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ProjectRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Project
 {
     #[ORM\Id]
@@ -36,6 +37,14 @@ class Project
     #[ORM\ManyToMany(targetEntity: Employee::class, inversedBy: 'projects')]
     #[Groups(['project:read'])]
     private Collection $participants;
+
+    #[ORM\Column]
+    #[Groups(['project:read'])]
+    private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column]
+    #[Groups(['project:read'])]
+    private ?\DateTimeImmutable $updatedAt = null;
 
     public function __construct()
     {
@@ -105,5 +114,28 @@ class Project
         $this->participants->removeElement($participant);
 
         return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    #[ORM\PrePersist]
+    public function setCreatedAt(): void
+    {
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    #[ORM\PreUpdate]
+    public function setUpdatedAt(): void
+    {
+        $this->updatedAt = new \DateTimeImmutable();
     }
 }
