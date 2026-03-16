@@ -19,28 +19,34 @@ This is a REST API application built with Symfony 8.0 and PHP 8.4, designed to m
 
 ## 📦 Installation & Setup
 
-1. **Install PHP dependencies:**
+1. **Clone the repository:**
     ```bash
-    docker compose exec php composer install
+    git clone https://github.com/StanislavHlukhanych/symfony_test_task.git
+    cd symfony_test_task
     ```
-   
+
 2. **Start the Docker containers:**
     ```bash
     docker compose up -d
     ```
 
-3. **Set up the database:**
+3. **Install PHP dependencies:**
+    ```bash
+    docker compose exec php composer install
+    ```
+
+4. **Set up the database:**
     ```bash
     docker compose exec php bin/console doctrine:database:create
     docker compose exec php bin/console doctrine:migrations:migrate
     ```
 
-4. **Load fixtures (dummy data):**
+5. **Load fixtures (dummy data):**
     ```bash
     docker compose exec php bin/console doctrine:fixtures:load
     ```
 
-5. **Generate JWT keys (if not present):**
+6. **Generate JWT keys (if not present):**
     The project includes JWT keys in `config/jwt/`, but if you need to regenerate them:
     ```bash
     docker compose exec php bin/console lexik:jwt:generate-keypair
