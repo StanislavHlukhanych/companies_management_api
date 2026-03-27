@@ -21,15 +21,15 @@ class Employee
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255, unique: true)]
-    #[Groups(['company:read', 'employee:read', 'employee:write', 'project:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?string $email = null;
 
     #[ORM\ManyToOne(inversedBy: 'employees')]

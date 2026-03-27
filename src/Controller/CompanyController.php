@@ -21,7 +21,7 @@ final class CompanyController extends AbstractController
     use ApiResponseTrait;
 
     public function __construct(
-        private readonly CompanyService $CompanyService
+        private readonly CompanyService $companyService
     ){}
 
     #[Route('/api/companies', name: 'app_company', methods: ['GET'])]
@@ -41,7 +41,7 @@ final class CompanyController extends AbstractController
     #[Route('/api/companies', name: 'app_company_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] CompanyDto $companyDto,): JsonResponse
     {
-        $company = $this->CompanyService->create($companyDto);
+        $company = $this->companyService->create($companyDto);
 
         return $this->success($company, Response::HTTP_CREATED, ['company:read']);
     }
@@ -49,7 +49,7 @@ final class CompanyController extends AbstractController
     #[Route('/api/companies/{id}', name: 'app_company_update', methods: ['PUT'])]
     public function update(Company $company, #[MapRequestPayload] CompanyDto $companyDto): JsonResponse
     {
-        $company = $this->CompanyService->update($company, $companyDto);
+        $company = $this->companyService->update($company, $companyDto);
 
         return $this->success($company, Response::HTTP_OK, ['company:read']);
     }
@@ -57,7 +57,7 @@ final class CompanyController extends AbstractController
     #[Route('/api/companies/{id}', name: 'app_company_delete', methods: ['DELETE'])]
     public function delete(Company $company): JsonResponse
     {
-        $this->CompanyService->delete($company);
+        $this->companyService->delete($company);
 
         return $this->success(null, Response::HTTP_OK);
     }

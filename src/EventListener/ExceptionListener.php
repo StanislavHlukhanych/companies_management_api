@@ -19,7 +19,7 @@ class ExceptionListener
             $response = new JsonResponse([
                 'status' => 'fail',
                 'data' => [
-                    'message' => 'The requested resource was not found.'
+                    'message' => ['message' => $exception->getMessage() ?: 'Resource not found.']
                 ]
             ], 404);
 
