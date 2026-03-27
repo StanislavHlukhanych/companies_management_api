@@ -20,11 +20,11 @@ class Project
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'employee:read', 'project:read', 'project:write'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['company:read', 'employee:read', 'project:read', 'project:write'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?string $description = null;
 
     #[ORM\ManyToOne(inversedBy: 'projects')]
