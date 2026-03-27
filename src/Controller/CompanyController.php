@@ -7,14 +7,11 @@ use App\Entity\Company;
 use App\Repository\CompanyRepository;
 use App\Service\CompanyService;
 use App\Trait\ApiResponseTrait;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
 
 final class CompanyController extends AbstractController
 {
@@ -39,7 +36,7 @@ final class CompanyController extends AbstractController
     }
 
     #[Route('/api/companies', name: 'app_company_create', methods: ['POST'])]
-    public function create(#[MapRequestPayload] CompanyDto $companyDto,): JsonResponse
+    public function create(#[MapRequestPayload] CompanyDto $companyDto): JsonResponse
     {
         $company = $this->companyService->create($companyDto);
 

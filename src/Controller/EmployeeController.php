@@ -3,22 +3,15 @@
 namespace App\Controller;
 
 use App\Dto\EmployeeDto;
-use App\Entity\Company;
 use App\Entity\Employee;
-use App\Repository\CompanyRepository;
 use App\Repository\EmployeeRepository;
-use App\Repository\ProjectRepository;
 use App\Service\EmployeeService;
 use App\Trait\ApiResponseTrait;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class EmployeeController extends AbstractController
 {
