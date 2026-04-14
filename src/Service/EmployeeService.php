@@ -58,7 +58,8 @@ class EmployeeService
             throw new NotFoundHttpException('Company with the provided ID does not exist');
         }
 
-        if ($employee->getEmail() !== $employeeDto->email && $this->employeeRepository->findOneBy(['email' => $employeeDto->email])) {
+        if ($employee->getEmail() !== $employeeDto->email &&
+            $this->employeeRepository->findOneBy(['email' => $employeeDto->email])) {
             throw new UnprocessableEntityHttpException('Email already exists');
         }
 
@@ -67,16 +68,24 @@ class EmployeeService
         $employee->setEmail($employeeDto->email);
         $employee->setCompany($company);
 
-        foreach ($employee->getProjects() as $project) {
-            $employee->removeProject($project);
+//        foreach ($employee->getProjects() as $project) {
+//            $employee->removeProject($project);
+//        }
+
+        $employee->getProjects()->clear();
+
+        $newProjects = $this->projectRepository->findBy(['id' => $employeeDto->projectIds]);
+
+        foreach ($newProjects as $newProject) {
+            $employee->addProject($newProject);
         }
 
-        foreach ($employeeDto->projectIds as $projectId) {
-            $project = $this->projectRepository->find($projectId);
-            if ($project) {
-                $employee->addProject($project);
-            }
-        }
+//        foreach ($employeeDto->projectIds as $projectId) {
+//            $project = $this->projectRepository->find($projectId);
+//            if ($project) {
+//                $employee->addProject($project);
+//            }
+//        }
 
         $this->entityManager->flush();
 
