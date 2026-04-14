@@ -1,4 +1,4 @@
-# Symfony API Test Task
+# Symfony Companies Management API
 
 This is a REST API application built with Symfony 8.0 and PHP 8.4, designed to manage Companies, Employees, Projects, and Users. It uses JWT for authentication and runs in a Docker environment.
 
