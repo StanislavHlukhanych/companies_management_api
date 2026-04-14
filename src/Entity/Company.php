@@ -20,11 +20,11 @@ class Company
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['company:read', 'company:write', 'employee:read', 'project:read'])]
+    #[Groups(['company:read', 'employee:read', 'project:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['company:read', 'company:write'])]
+    #[Groups(['company:read'])]
     private ?string $description = null;
 
     /**

@@ -2,20 +2,24 @@
 
 namespace App\Controller;
 
+use App\Dto\CompanyDto;
 use App\Entity\Company;
 use App\Repository\CompanyRepository;
+use App\Service\CompanyService;
 use App\Trait\ApiResponseTrait;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Serializer\SerializerInterface;
 
 final class CompanyController extends AbstractController
 {
     use ApiResponseTrait;
+
+    public function __construct(
+        private readonly CompanyService $companyService
+    ){}
 
     #[Route('/api/companies', name: 'app_company', methods: ['GET'])]
     public function index(CompanyRepository $companyRepository): JsonResponse
@@ -32,49 +36,25 @@ final class CompanyController extends AbstractController
     }
 
     #[Route('/api/companies', name: 'app_company_create', methods: ['POST'])]
-    public function create(
-        Request $request,
-        EntityManagerInterface $entityManager,
-        SerializerInterface $serializer
-    ): JsonResponse
+    public function create(#[MapRequestPayload] CompanyDto $companyDto): JsonResponse
     {
-        $data = $request->getContent();
-        $company = $serializer->deserialize($data, Company::class, 'json', ['groups' => 'company:write']);
-
-        $entityManager->persist($company);
-        $entityManager->flush();
+        $company = $this->companyService->create($companyDto);
 
         return $this->success($company, Response::HTTP_CREATED, ['company:read']);
     }
 
     #[Route('/api/companies/{id}', name: 'app_company_update', methods: ['PUT'])]
-    public function update(
-        Request $request,
-        EntityManagerInterface $entityManager,
-        SerializerInterface $serializer,
-        Company $company
-    ): JsonResponse
+    public function update(Company $company, #[MapRequestPayload] CompanyDto $companyDto): JsonResponse
     {
-        $data = $request->getContent();
-        $serializer->deserialize($data, Company::class, 'json',
-            ['object_to_populate' => $company, 'groups' => 'company:write']);
-
-        $entityManager->flush();
+        $company = $this->companyService->update($company, $companyDto);
 
         return $this->success($company, Response::HTTP_OK, ['company:read']);
     }
 
     #[Route('/api/companies/{id}', name: 'app_company_delete', methods: ['DELETE'])]
-    public function delete(EntityManagerInterface $entityManager, Company $company): JsonResponse
+    public function delete(Company $company): JsonResponse
     {
-        if (count($company->getEmployees()) > 0 || count($company->getProjects()) > 0) {
-            return $this->fail([
-                'error' => 'Cannot delete a company that has employees or projects'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        $entityManager->remove($company);
-        $entityManager->flush();
+        $this->companyService->delete($company);
 
         return $this->success(null, Response::HTTP_OK);
     }
